@@ -1,0 +1,19 @@
+{
+  "name": "Arvind Gupta Toys — Science from Trash",
+  "short_name": "Arvind Gupta Toys",
+  "description": "Free science toys, films and books for children. Learn by making — 1,311 toys, 2,860 films.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#c8531a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["education", "entertainment"]
+}
