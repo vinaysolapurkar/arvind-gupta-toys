@@ -796,9 +796,9 @@ export default function HomePage() {
             <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>Arvind Gupta Toys</span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Inspired by <a href="https://www.arvindguptatoys.com" target="_blank" rel="noopener noreferrer" style={{ color: '#c8531a', textDecoration: 'none', fontWeight: 600 }}>
+            Inspired by <a href="https://web.archive.org/web/2024/https://www.arvindguptatoys.com" target="_blank" rel="noopener noreferrer" style={{ color: '#c8531a', textDecoration: 'none', fontWeight: 600 }}>
               arvindguptatoys.com
-            </a> · Free forever
+            </a> · Preserved on Internet Archive · Free forever
           </p>
         </div>
       </footer>

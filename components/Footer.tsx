@@ -118,7 +118,7 @@ export default function Footer() {
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
-              { href: 'https://www.arvindguptatoys.com', label: 'Arvind Gupta Toys' },
+              { href: 'https://web.archive.org/web/2024/https://www.arvindguptatoys.com', label: 'Arvind Gupta Toys (Archived)' },
               { href: 'https://archive.org', label: 'Internet Archive' },
               { href: 'https://www.gutenberg.org', label: 'Project Gutenberg' },
             ].map((link) => (

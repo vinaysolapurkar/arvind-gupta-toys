@@ -336,7 +336,7 @@ export default function FilmsPage() {
                 </button>
               )}
               <a
-                href={`https://www.arvindguptatoys.com/films.html`}
+                href={`https://web.archive.org/web/2024/https://www.arvindguptatoys.com/films.html`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -346,7 +346,7 @@ export default function FilmsPage() {
                   border: '1px solid var(--border)',
                 }}
               >
-                View full list on arvindguptatoys.com →
+                View full list on Internet Archive →
               </a>
             </div>
           </div>
@@ -361,7 +361,7 @@ export default function FilmsPage() {
             <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)' }}>Arvind Gupta Toys</span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Inspired by <a href="https://www.arvindguptatoys.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>arvindguptatoys.com</a>
+            Inspired by <a href="https://web.archive.org/web/2024/https://www.arvindguptatoys.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>arvindguptatoys.com</a> · Preserved on Internet Archive
           </p>
         </div>
       </footer>
