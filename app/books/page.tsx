@@ -1,8 +1,18 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BookOpen, ExternalLink, Archive } from 'lucide-react';
-import { books } from '@/lib/data';
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  archiveUrl: string;
+  subjects: string[];
+  year: number;
+  description: string;
+}
 
 const subjectColors: Record<string, string> = {
   'Science toys': '#c8531a',
@@ -28,6 +38,36 @@ function getSubjectColor(subject: string): string {
 }
 
 export default function BooksPage() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/books.json')
+      .then(r => r.json())
+      .then(data => {
+        setBooks(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = search.trim()
+    ? books.filter(b =>
+        b.title.toLowerCase().includes(search.toLowerCase()) ||
+        b.author.toLowerCase().includes(search.toLowerCase()) ||
+        b.description.toLowerCase().includes(search.toLowerCase())
+      )
+    : books;
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Loading books...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       {/* Header */}
@@ -79,6 +119,21 @@ export default function BooksPage() {
           </p>
         </div>
 
+        {/* Search */}
+        <div style={{ marginBottom: '24px' }}>
+          <input
+            type="text"
+            placeholder="Search books by title, author, or description..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{
+              width: '100%', padding: '14px 20px', borderRadius: '12px',
+              border: '1px solid var(--border)', background: 'var(--bg-card)',
+              color: 'var(--text)', fontSize: '15px', outline: 'none',
+            }}
+          />
+        </div>
+
         {/* Stats banner */}
         <div style={{
           display: 'flex', gap: '24px', marginBottom: '40px',
@@ -87,7 +142,7 @@ export default function BooksPage() {
         }}>
           {[
             { label: 'Books', value: books.length },
-            { label: 'Subjects', value: new Set(books.flatMap(b => b.subjects)).size },
+            { label: 'Showing', value: filtered.length },
             { label: 'Archive.org', value: 0 },
           ].map((stat, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -115,7 +170,7 @@ export default function BooksPage() {
         </div>
 
         {/* Books grid */}
-        {books.length === 0 ? (
+        {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 24px' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
             <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Books coming soon</h3>
@@ -123,7 +178,7 @@ export default function BooksPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-            {books.map((book, i) => {
+            {filtered.slice(0, 200).map((book, i) => {
               const primaryColor = getSubjectColor(book.subjects[0] || 'Default');
               return (
                 <a
@@ -209,6 +264,11 @@ export default function BooksPage() {
               );
             })}
           </div>
+        )}
+        {filtered.length > 200 && (
+          <p style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '14px' }}>
+            Showing 200 of {filtered.length} books. Use the search bar to find specific books.
+          </p>
         )}
 
         {/* CTA */}
