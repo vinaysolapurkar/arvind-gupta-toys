@@ -179,7 +179,7 @@ export default function BooksPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
             {filtered.slice(0, 200).map((book, i) => {
-              const primaryColor = getSubjectColor(book.subjects[0] || 'Default');
+              const primaryColor = getSubjectColor((book.subjects || [])[0] || 'Default');
               return (
                 <a
                   key={book.id}
@@ -206,13 +206,15 @@ export default function BooksPage() {
                       }}>
                         <BookOpen size={24} style={{ color: primaryColor }} />
                       </div>
-                      <span style={{
-                        padding: '4px 10px', borderRadius: '100px',
-                        fontSize: '11px', fontWeight: 600,
-                        background: 'var(--bg-elevated)', color: 'var(--text-muted)',
-                      }}>
-                        {book.year}
-                      </span>
+                      {book.year > 0 && (
+                        <span style={{
+                          padding: '4px 10px', borderRadius: '100px',
+                          fontSize: '11px', fontWeight: 600,
+                          background: 'var(--bg-elevated)', color: 'var(--text-muted)',
+                        }}>
+                          {book.year}
+                        </span>
+                      )}
                     </div>
 
                     {/* Title */}
@@ -232,7 +234,7 @@ export default function BooksPage() {
 
                     {/* Subjects */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-                      {book.subjects.map(subj => (
+                      {(book.subjects || []).map(subj => (
                         <span
                           key={subj}
                           style={{
