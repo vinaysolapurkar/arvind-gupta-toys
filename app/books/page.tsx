@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { BookOpen, ExternalLink, Archive } from 'lucide-react';
+import { BookOpen, ExternalLink, Archive, Search, X } from 'lucide-react';
 
 interface Book {
   id: string;
@@ -12,58 +12,83 @@ interface Book {
   subjects: string[];
   year: number;
   description: string;
+  category: string;
+  language: string;
 }
 
-const subjectColors: Record<string, string> = {
-  'Science toys': '#c8531a',
-  'DIY': '#22c55e',
-  'Education': '#8b5cf6',
-  'Science': '#0ea5e9',
-  'Children': '#f97316',
-  'Experiments': '#14b8a6',
-  'Physics': '#eab308',
-  'Chemistry': '#8b5cf6',
-  'Biology': '#22c55e',
-  'Electronics': '#06b6d4',
-  'Engineering': '#ef4444',
-  'Making': '#f59e0b',
-  'Craft': '#ec4899',
-  'Magic': '#a855f7',
-  'Encyclopedia': '#6366f1',
-  'Default': '#64748b',
-};
+const CATEGORIES = [
+  { id: 'all', label: 'All Books', color: '#64748b' },
+  { id: 'Science & Experiments', label: 'Science', color: '#0ea5e9' },
+  { id: 'Stories & Literature', label: 'Stories', color: '#8b5cf6' },
+  { id: 'Animals & Birds', label: 'Animals & Birds', color: '#22c55e' },
+  { id: 'Nature & Environment', label: 'Nature', color: '#15803d' },
+  { id: 'History & Biography', label: 'History', color: '#b45309' },
+  { id: 'Education & Teaching', label: 'Education', color: '#6366f1' },
+  { id: 'Mathematics & Puzzles', label: 'Maths & Puzzles', color: '#14b8a6' },
+  { id: 'Toys & Crafts', label: 'Toys & Crafts', color: '#f97316' },
+  { id: 'Art & Drawing', label: 'Art', color: '#ec4899' },
+  { id: 'Space & Astronomy', label: 'Space', color: '#1e40af' },
+  { id: 'Water & Energy', label: 'Energy', color: '#eab308' },
+  { id: 'Philosophy & Society', label: 'Philosophy', color: '#78716c' },
+  { id: 'Poetry & Songs', label: 'Poetry', color: '#a855f7' },
+  { id: 'Health & Nutrition', label: 'Health', color: '#ef4444' },
+  { id: 'Music & Performance', label: 'Music', color: '#06b6d4' },
+  { id: 'Language & Literacy', label: 'Language', color: '#f59e0b' },
+  { id: 'General', label: 'General', color: '#64748b' },
+];
 
-function getSubjectColor(subject: string): string {
-  return subjectColors[subject] || subjectColors['Default'];
-}
+const LANGUAGES = [
+  'All', 'English', 'Hindi', 'Gujarati', 'Marathi', 'Tamil', 'Telugu',
+  'Kannada', 'Bengali', 'Punjabi', 'Malayalam', 'Russian', 'Odia', 'Urdu', 'Sindhi',
+];
+
+const ITEMS_PER_PAGE = 60;
 
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [language, setLanguage] = useState('All');
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => {
     fetch('/books.json')
       .then(r => r.json())
-      .then(data => {
-        setBooks(data);
-        setLoading(false);
-      })
+      .then(data => { setBooks(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  const filtered = search.trim()
-    ? books.filter(b =>
-        b.title.toLowerCase().includes(search.toLowerCase()) ||
-        b.author.toLowerCase().includes(search.toLowerCase()) ||
-        b.description.toLowerCase().includes(search.toLowerCase())
-      )
-    : books;
+  const filtered = useMemo(() => {
+    let result = books;
+    if (category !== 'all') {
+      result = result.filter(b => b.category === category);
+    }
+    if (language !== 'All') {
+      result = result.filter(b => (b.language || 'English') === language);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(b =>
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q) ||
+        (b.description || '').toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [books, category, language, search]);
+
+  const visible = filtered.slice(0, visibleCount);
+
+  useEffect(() => { setVisibleCount(ITEMS_PER_PAGE); }, [category, language, search]);
 
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Loading books...</p>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Loading 8,000+ books...</p>
+        </div>
       </div>
     );
   }
@@ -107,79 +132,109 @@ export default function BooksPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px 80px' }}>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px 80px' }}>
 
         {/* Page Header */}
-        <div style={{ marginBottom: '40px' }}>
+        <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: '8px' }}>
-            📚 Free Books
+            📚 Free Books & Resources
           </h1>
           <p style={{ fontSize: '16px', color: 'var(--text-muted)', maxWidth: '560px' }}>
-            Public domain science books from Internet Archive and Project Gutenberg. Free to read, free to share.
+            {books.length.toLocaleString()} books preserved on Internet Archive. Free to read, free to share.
           </p>
         </div>
 
         {/* Search */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
-            placeholder="Search books by title, author, or description..."
+            placeholder="Search by title, author..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{
-              width: '100%', padding: '14px 20px', borderRadius: '12px',
+              width: '100%', padding: '14px 20px 14px 44px', borderRadius: '12px',
               border: '1px solid var(--border)', background: 'var(--bg-card)',
               color: 'var(--text)', fontSize: '15px', outline: 'none',
+              boxSizing: 'border-box',
             }}
           />
+          {search && (
+            <button onClick={() => setSearch('')} style={{
+              position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px',
+            }}>
+              <X size={16} />
+            </button>
+          )}
         </div>
 
-        {/* Stats banner */}
-        <div style={{
-          display: 'flex', gap: '24px', marginBottom: '40px',
-          padding: '20px 24px', background: 'var(--bg-card)', borderRadius: '14px',
-          border: '1px solid var(--border)',
-        }}>
-          {[
-            { label: 'Books', value: books.length },
-            { label: 'Showing', value: filtered.length },
-            { label: 'Archive.org', value: 0 },
-          ].map((stat, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <BookOpen size={20} style={{ color: 'var(--accent)' }} />
-              <div>
-                <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{stat.value || books.length}</div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{stat.label}</div>
-              </div>
-            </div>
+        {/* Language filter */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {LANGUAGES.map(lang => (
+            <button
+              key={lang}
+              onClick={() => setLanguage(lang)}
+              style={{
+                padding: '6px 14px', borderRadius: '100px', border: '1px solid',
+                borderColor: language === lang ? 'var(--accent)' : 'var(--border)',
+                background: language === lang ? 'rgba(200,83,26,0.1)' : 'var(--bg-card)',
+                color: language === lang ? 'var(--accent)' : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {lang}
+            </button>
           ))}
-          <div style={{ flex: 1 }} />
-          <a
-            href="https://archive.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 18px', borderRadius: '10px',
-              background: 'var(--accent)', color: 'white',
-              textDecoration: 'none', fontSize: '14px', fontWeight: 600,
-            }}
-          >
-            Browse Archive.org <ExternalLink size={14} />
-          </a>
         </div>
+
+        {/* Category pills */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          {CATEGORIES.map(cat => {
+            const isActive = category === cat.id;
+            const count = cat.id === 'all' ? books.length : books.filter(b => b.category === cat.id).length;
+            if (count === 0 && cat.id !== 'all') return null;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setCategory(cat.id)}
+                style={{
+                  padding: '8px 16px', borderRadius: '10px', border: '1px solid',
+                  borderColor: isActive ? cat.color : 'var(--border)',
+                  background: isActive ? `${cat.color}15` : 'var(--bg-card)',
+                  color: isActive ? cat.color : 'var(--text-muted)',
+                  fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}
+              >
+                {cat.label}
+                <span style={{
+                  fontSize: '11px', padding: '1px 6px', borderRadius: '100px',
+                  background: isActive ? `${cat.color}20` : 'var(--bg-elevated)',
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Results count */}
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          Showing {Math.min(visibleCount, filtered.length)} of {filtered.length.toLocaleString()} books
+        </p>
 
         {/* Books grid */}
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
-            <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Books coming soon</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Check back soon for free public domain science books</p>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+            <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>No books found</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Try a different search or category</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-            {filtered.slice(0, 200).map((book, i) => {
-              const primaryColor = getSubjectColor((book.subjects || [])[0] || 'Default');
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+            {visible.map((book) => {
+              const catInfo = CATEGORIES.find(c => c.id === book.category) || CATEGORIES[0];
               return (
                 <a
                   key={book.id}
@@ -189,76 +244,51 @@ export default function BooksPage() {
                   style={{ textDecoration: 'none' }}
                 >
                   <div
-                    className="card-hover animate-fade-up"
                     style={{
-                      background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
-                      padding: '24px', height: '100%', display: 'flex', flexDirection: 'column',
-                      opacity: 0, animationDelay: `${i * 60}ms`, animationFillMode: 'forwards',
+                      background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)',
+                      padding: '20px', height: '100%', display: 'flex', flexDirection: 'column',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
                     }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = primaryColor; el.style.boxShadow = `0 4px 20px rgba(0,0,0,0.06)`; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border)'; el.style.boxShadow = 'none'; }}
+                    onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = catInfo.color; el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border)'; el.style.boxShadow = 'none'; }}
                   >
-                    {/* Book icon + year */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                      <div style={{
-                        width: '48px', height: '48px', borderRadius: '12px',
-                        background: `${primaryColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <span style={{
+                        padding: '3px 10px', borderRadius: '100px',
+                        fontSize: '11px', fontWeight: 600,
+                        background: `${catInfo.color}12`, color: catInfo.color,
                       }}>
-                        <BookOpen size={24} style={{ color: primaryColor }} />
-                      </div>
-                      {book.year > 0 && (
+                        {book.category}
+                      </span>
+                      {book.language && book.language !== 'English' && (
                         <span style={{
-                          padding: '4px 10px', borderRadius: '100px',
+                          padding: '3px 8px', borderRadius: '100px',
                           fontSize: '11px', fontWeight: 600,
                           background: 'var(--bg-elevated)', color: 'var(--text-muted)',
                         }}>
-                          {book.year}
+                          {book.language}
                         </span>
                       )}
                     </div>
 
-                    {/* Title */}
-                    <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', lineHeight: 1.3 }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px', lineHeight: 1.3 }}>
                       {book.title}
                     </h3>
 
-                    {/* Author */}
-                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', flex: 1 }}>
                       by {book.author}
                     </p>
 
-                    {/* Description */}
-                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px', flex: 1 }}>
-                      {book.description}
-                    </p>
-
-                    {/* Subjects */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-                      {(book.subjects || []).map(subj => (
-                        <span
-                          key={subj}
-                          style={{
-                            padding: '3px 10px', borderRadius: '100px',
-                            fontSize: '11px', fontWeight: 600,
-                            background: `${getSubjectColor(subj)}15`, color: getSubjectColor(subj),
-                          }}
-                        >
-                          {subj}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Read link */}
                     <div style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      paddingTop: '14px', borderTop: '1px solid var(--border)',
+                      paddingTop: '12px', borderTop: '1px solid var(--border)',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Archive size={14} style={{ color: 'var(--text-muted)' }} />
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Internet Archive</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Archive size={12} style={{ color: 'var(--text-muted)' }} />
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Internet Archive</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: primaryColor, fontSize: '13px', fontWeight: 600 }}>
-                        Read free <ExternalLink size={13} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: catInfo.color, fontSize: '12px', fontWeight: 600 }}>
+                        Read free <ExternalLink size={12} />
                       </div>
                     </div>
                   </div>
@@ -267,38 +297,23 @@ export default function BooksPage() {
             })}
           </div>
         )}
-        {filtered.length > 200 && (
-          <p style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '14px' }}>
-            Showing 200 of {filtered.length} books. Use the search bar to find specific books.
-          </p>
-        )}
 
-        {/* CTA */}
-        <div style={{
-          marginTop: '48px', padding: '40px', borderRadius: '16px',
-          background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-glow) 100%)',
-          textAlign: 'center',
-        }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'white', marginBottom: '10px' }}>
-            Want more free books?
-          </h2>
-          <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.85)', marginBottom: '24px' }}>
-            Internet Archive has millions of free public domain books. Browse by subject.
-          </p>
-          <a
-            href="https://archive.org/search?query=science+experiments+children"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '12px 24px', borderRadius: '10px',
-              background: 'white', color: 'var(--accent)', textDecoration: 'none',
-              fontSize: '14px', fontWeight: 700,
-            }}
-          >
-            Search Archive.org <ExternalLink size={14} />
-          </a>
-        </div>
+        {/* Load more */}
+        {visibleCount < filtered.length && (
+          <div style={{ textAlign: 'center', padding: '32px' }}>
+            <button
+              onClick={() => setVisibleCount(v => v + ITEMS_PER_PAGE)}
+              style={{
+                padding: '12px 32px', borderRadius: '10px',
+                background: 'var(--accent)', color: 'white',
+                border: 'none', fontSize: '14px', fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Load more ({Math.min(ITEMS_PER_PAGE, filtered.length - visibleCount)} more)
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
