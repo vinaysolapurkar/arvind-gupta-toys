@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X, Search } from 'lucide-react';
+import Logo from './Logo';
 
 const navLinks = [
   { href: '/toys', label: 'Toys' },
@@ -24,7 +25,7 @@ export default function Header() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === '/' && !searchOpen) {
+      if (e.key === '/' && !searchOpen && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
         e.preventDefault();
         setSearchOpen(true);
       }
@@ -40,7 +41,9 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      window.location.href = `/toys?q=${encodeURIComponent(query)}`;
+      window.location.href = `/books?q=${encodeURIComponent(query)}`;
+      setSearchOpen(false);
+      setQuery('');
     }
   };
 
@@ -58,46 +61,31 @@ export default function Header() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 24px',
-          backgroundColor: scrolled ? 'rgba(26, 22, 18, 0.95)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid var(--border)' : 'none',
+          backgroundColor: scrolled ? 'rgba(250,250,248,0.97)' : 'rgba(250,250,248,0.97)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
           transition: 'all 0.3s ease',
         }}
       >
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, var(--accent), var(--accent-glow))',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-              }}
-            >
-              🧪
-            </div>
-            <span
-              style={{
-                fontFamily: 'var(--font-playfair)',
-                fontSize: '20px',
-                fontWeight: 700,
-                color: 'var(--cream)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Arvind Gupta Toys
-            </span>
-          </div>
+        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Logo size={36} />
+          <span
+            style={{
+              fontSize: '17px',
+              fontWeight: 800,
+              color: 'var(--text)',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Arvind Gupta Toys
+          </span>
         </Link>
 
         <nav
           style={{
             display: 'flex',
-            gap: '8px',
+            gap: '4px',
+            alignItems: 'center',
           }}
           className="desktop-nav"
         >
@@ -109,17 +97,17 @@ export default function Header() {
                 padding: '8px 16px',
                 borderRadius: '8px',
                 textDecoration: 'none',
-                color: 'var(--cream-muted)',
+                color: 'var(--text-muted)',
                 fontSize: '15px',
-                fontWeight: 500,
+                fontWeight: 600,
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--cream)';
-                e.currentTarget.style.backgroundColor = 'var(--bg-elevated)';
+                e.currentTarget.style.color = 'var(--accent)';
+                e.currentTarget.style.backgroundColor = 'rgba(200,83,26,0.06)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--cream-muted)';
+                e.currentTarget.style.color = 'var(--text-muted)';
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
@@ -137,7 +125,7 @@ export default function Header() {
               borderRadius: '8px',
               border: '1px solid var(--border)',
               backgroundColor: 'var(--bg-card)',
-              color: 'var(--cream-muted)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -150,7 +138,7 @@ export default function Header() {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.color = 'var(--cream-muted)';
+              e.currentTarget.style.color = 'var(--text-muted)';
             }}
             aria-label="Search"
           >
@@ -166,7 +154,7 @@ export default function Header() {
               borderRadius: '8px',
               border: '1px solid var(--border)',
               backgroundColor: 'var(--bg-card)',
-              color: 'var(--cream-muted)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               display: 'none',
               alignItems: 'center',
@@ -205,7 +193,7 @@ export default function Header() {
                 padding: '12px 16px',
                 borderRadius: '8px',
                 textDecoration: 'none',
-                color: 'var(--cream)',
+                color: 'var(--text)',
                 fontSize: '16px',
                 fontWeight: 500,
                 backgroundColor: 'var(--bg-elevated)',
@@ -224,7 +212,7 @@ export default function Header() {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.8)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 200,
             display: 'flex',
             alignItems: 'flex-start',
@@ -240,33 +228,34 @@ export default function Header() {
               maxWidth: '560px',
               margin: '0 16px',
               backgroundColor: 'var(--bg-card)',
-              borderRadius: '12px',
+              borderRadius: '16px',
               border: '1px solid var(--border)',
               overflow: 'hidden',
+              boxShadow: '0 24px 48px rgba(0,0,0,0.15)',
             }}
           >
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                padding: '16px',
+                padding: '16px 20px',
                 borderBottom: '1px solid var(--border)',
                 gap: '12px',
               }}
             >
-              <Search size={20} style={{ color: 'var(--cream-muted)' }} />
+              <Search size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search toys, films, books..."
+                placeholder="Search books, toys, films..."
                 autoFocus
                 style={{
                   flex: 1,
                   backgroundColor: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: 'var(--cream)',
+                  color: 'var(--text)',
                   fontSize: '16px',
                 }}
               />
@@ -275,30 +264,31 @@ export default function Header() {
                   padding: '4px 8px',
                   borderRadius: '4px',
                   backgroundColor: 'var(--bg-elevated)',
-                  color: 'var(--cream-muted)',
+                  color: 'var(--text-muted)',
                   fontSize: '12px',
                   fontFamily: 'monospace',
+                  border: '1px solid var(--border)',
                 }}
               >
                 ESC
               </kbd>
             </div>
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '12px 20px', display: 'flex', gap: '8px' }}>
               <button
                 type="submit"
                 style={{
-                  width: '100%',
+                  flex: 1,
                   padding: '12px',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'var(--accent)',
-                  color: 'var(--cream)',
+                  color: 'white',
                   fontSize: '15px',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                Search
+                Search Books
               </button>
             </div>
           </form>
