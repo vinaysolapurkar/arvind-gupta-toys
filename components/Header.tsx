@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/toys', label: 'Toys' },
   { href: '/films', label: 'Films' },
   { href: '/books', label: 'Books' },
+  { href: '/about', label: 'About' },
 ];
 
 export default function Header() {
