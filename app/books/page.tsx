@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BookOpen, ExternalLink, Archive, Search, X, ChevronDown, SlidersHorizontal, ArrowUpDown, Filter } from 'lucide-react';
+import { BookOpen, ExternalLink, Archive, Search, X, ChevronDown, ChevronRight, SlidersHorizontal, ArrowUpDown, Filter, SearchX, Shuffle, Bookmark, Heart } from 'lucide-react';
 import Header from '@/components/Header';
 import Logo from '@/components/Logo';
 
@@ -56,10 +56,71 @@ const SORT_OPTIONS = [
 
 const ITEMS_PER_PAGE = 48;
 
-function BookCard({ book }: { book: Book }) {
+function SkeletonCard() {
+  return (
+    <div style={{
+      background: 'var(--bg-card)', borderRadius: '14px',
+      border: '1px solid var(--border)', overflow: 'hidden',
+    }}>
+      <div style={{
+        height: '180px', background: 'var(--bg-elevated)',
+        animation: 'shimmer 1.5s ease-in-out infinite',
+      }} />
+      <div style={{ padding: '16px' }}>
+        <div style={{
+          width: '60%', height: '12px', borderRadius: '4px',
+          background: 'var(--bg-elevated)', marginBottom: '12px',
+          animation: 'shimmer 1.5s ease-in-out infinite',
+        }} />
+        <div style={{
+          width: '90%', height: '15px', borderRadius: '4px',
+          background: 'var(--bg-elevated)', marginBottom: '8px',
+          animation: 'shimmer 1.5s ease-in-out infinite',
+        }} />
+        <div style={{
+          width: '70%', height: '15px', borderRadius: '4px',
+          background: 'var(--bg-elevated)', marginBottom: '12px',
+          animation: 'shimmer 1.5s ease-in-out infinite',
+        }} />
+        <div style={{
+          width: '50%', height: '12px', borderRadius: '4px',
+          background: 'var(--bg-elevated)', marginBottom: '16px',
+          animation: 'shimmer 1.5s ease-in-out infinite',
+        }} />
+        <div style={{
+          borderTop: '1px solid var(--border)', paddingTop: '12px',
+          display: 'flex', justifyContent: 'space-between',
+        }}>
+          <div style={{
+            width: '40%', height: '11px', borderRadius: '4px',
+            background: 'var(--bg-elevated)',
+            animation: 'shimmer 1.5s ease-in-out infinite',
+          }} />
+          <div style={{
+            width: '25%', height: '11px', borderRadius: '4px',
+            background: 'var(--bg-elevated)',
+            animation: 'shimmer 1.5s ease-in-out infinite',
+          }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookCard({ book, isBookmarked, onToggleBookmark }: { book: Book; isBookmarked?: boolean; onToggleBookmark?: (id: string) => void }) {
   const [imgError, setImgError] = useState(false);
   const config = CATEGORY_CONFIG[book.category] || { emoji: '\uD83D\uDCDA', color: '#64748b', label: book.category };
   const thumbUrl = book.thumbnailUrl || (book.archiveId ? `https://archive.org/services/img/${book.archiveId}` : '');
+
+  const handleCardClick = () => {
+    // Track recently viewed
+    try {
+      const stored = localStorage.getItem('agt-recently-viewed');
+      const viewed: string[] = stored ? JSON.parse(stored) : [];
+      const updated = [book.id, ...viewed.filter(id => id !== book.id)].slice(0, 20);
+      localStorage.setItem('agt-recently-viewed', JSON.stringify(updated));
+    } catch {}
+  };
 
   return (
     <a
@@ -68,6 +129,7 @@ function BookCard({ book }: { book: Book }) {
       rel="noopener noreferrer"
       className="book-card"
       style={{ textDecoration: 'none', display: 'block' }}
+      onClick={handleCardClick}
     >
       <div
         style={{
@@ -78,7 +140,8 @@ function BookCard({ book }: { book: Book }) {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+          transition: 'transform 0.3s, box-shadow 0.3s, border-color 0.3s',
+          willChange: 'transform',
         }}
         onMouseEnter={e => {
           const el = e.currentTarget;
@@ -99,6 +162,7 @@ function BookCard({ book }: { book: Book }) {
           background: `linear-gradient(135deg, ${config.color}15, ${config.color}08)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative',
+          borderRadius: '13px 13px 0 0',
         }}>
           {thumbUrl && !imgError ? (
             <img
@@ -106,7 +170,7 @@ function BookCard({ book }: { book: Book }) {
               alt={book.title}
               loading="lazy"
               onError={() => setImgError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '13px 13px 0 0' }}
             />
           ) : (
             <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -118,6 +182,14 @@ function BookCard({ book }: { book: Book }) {
                 {book.category}
               </div>
             </div>
+          )}
+          {/* Gradient overlay on thumbnail bottom */}
+          {thumbUrl && !imgError && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: '48px',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.2), transparent)',
+              borderRadius: '0 0 0 0',
+            }} />
           )}
           {/* Language badge */}
           {book.language && book.language !== 'English' && (
@@ -142,6 +214,27 @@ function BookCard({ book }: { book: Book }) {
             }}>
               {book.format}
             </span>
+          )}
+          {/* Bookmark button */}
+          {onToggleBookmark && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onToggleBookmark(book.id); }}
+              style={{
+                position: 'absolute', bottom: '10px', right: '10px',
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: isBookmarked ? '#c8531a' : 'rgba(0,0,0,0.5)',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(4px)',
+                transition: 'transform 0.2s, background 0.2s',
+                zIndex: 2,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              title={isBookmarked ? 'Remove from reading list' : 'Add to reading list'}
+            >
+              <Bookmark size={15} style={{ color: 'white' }} fill={isBookmarked ? 'white' : 'none'} />
+            </button>
           )}
         </div>
 
@@ -193,14 +286,42 @@ function BookCard({ book }: { book: Book }) {
   );
 }
 
+function CollapsibleSection({ title, defaultOpen, children }: { title: string; defaultOpen: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '6px', width: '100%',
+          padding: '0', border: 'none', background: 'none', cursor: 'pointer',
+          marginBottom: open ? '12px' : '0',
+        }}
+      >
+        <ChevronRight size={14} style={{
+          color: 'var(--text-muted)',
+          transition: 'transform 0.2s',
+          transform: open ? 'rotate(90deg)' : 'rotate(0)',
+        }} />
+        <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {title}
+        </h3>
+      </button>
+      {open && children}
+    </div>
+  );
+}
+
 function BooksPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(() => {
     const cat = searchParams.get('category');
     return cat ? new Set(cat.split(',')) : new Set<string>();
@@ -213,6 +334,43 @@ function BooksPageInner() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'az');
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [showFilters, setShowFilters] = useState(false);
+  const [readingList, setReadingList] = useState<string[]>([]);
+  const [showReadingList, setShowReadingList] = useState(false);
+  const [surpriseBook, setSurpriseBook] = useState<Book | null>(null);
+  const [surpriseAnim, setSurpriseAnim] = useState(false);
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Load reading list from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('agt-reading-list');
+      if (saved) setReadingList(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const toggleBookmark = useCallback((bookId: string) => {
+    setReadingList(prev => {
+      const next = prev.includes(bookId) ? prev.filter(id => id !== bookId) : [...prev, bookId];
+      localStorage.setItem('agt-reading-list', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const handleSurpriseMe = useCallback(() => {
+    if (books.length === 0) return;
+    setSurpriseAnim(true);
+    setTimeout(() => setSurpriseAnim(false), 600);
+    const randomIndex = Math.floor(Math.random() * books.length);
+    setSurpriseBook(books[randomIndex]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [books]);
 
   // Sync URL with filters
   const updateURL = useCallback((params: Record<string, string>) => {
@@ -230,14 +388,14 @@ function BooksPageInner() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       updateURL({
-        q: search,
+        q: debouncedSearch,
         category: Array.from(selectedCategories).join(','),
         language: Array.from(selectedLanguages).join(','),
         sort: sortBy !== 'az' ? sortBy : '',
       });
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [search, selectedCategories, selectedLanguages, sortBy, updateURL]);
+  }, [debouncedSearch, selectedCategories, selectedLanguages, sortBy, updateURL]);
 
   // Load from URL on mount
   useEffect(() => {
@@ -251,6 +409,21 @@ function BooksPageInner() {
       .then(data => { setBooks(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    if (loading) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount(v => v + ITEMS_PER_PAGE);
+        }
+      },
+      { rootMargin: '400px' }
+    );
+    if (loadMoreRef.current) observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [loading, visibleCount]);
 
   // Computed counts
   const catCounts = useMemo(() => {
@@ -280,6 +453,9 @@ function BooksPageInner() {
   const filtered = useMemo(() => {
     let result = books;
 
+    if (showReadingList) {
+      result = result.filter(b => readingList.includes(b.id));
+    }
     if (selectedCategories.size > 0) {
       result = result.filter(b => selectedCategories.has(b.category));
     }
@@ -289,8 +465,8 @@ function BooksPageInner() {
     if (selectedFormats.size > 0) {
       result = result.filter(b => selectedFormats.has(b.format || 'PDF'));
     }
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
       result = result.filter(b =>
         b.title.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
@@ -316,20 +492,23 @@ function BooksPageInner() {
     }
 
     return result;
-  }, [books, selectedCategories, selectedLanguages, selectedFormats, search, sortBy]);
+  }, [books, selectedCategories, selectedLanguages, selectedFormats, debouncedSearch, sortBy, showReadingList, readingList]);
 
   const visible = filtered.slice(0, visibleCount);
 
-  useEffect(() => { setVisibleCount(ITEMS_PER_PAGE); }, [selectedCategories, selectedLanguages, selectedFormats, search, sortBy]);
+  useEffect(() => { setVisibleCount(ITEMS_PER_PAGE); }, [selectedCategories, selectedLanguages, selectedFormats, debouncedSearch, sortBy, showReadingList]);
 
-  const hasActiveFilters = selectedCategories.size > 0 || selectedLanguages.size > 0 || selectedFormats.size > 0 || search.trim() !== '';
+  const activeFilterCount = selectedCategories.size + selectedLanguages.size + selectedFormats.size + (showReadingList ? 1 : 0);
+  const hasActiveFilters = activeFilterCount > 0 || search.trim() !== '';
 
   const clearAllFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setSelectedCategories(new Set());
     setSelectedLanguages(new Set());
     setSelectedFormats(new Set());
     setSortBy('az');
+    setShowReadingList(false);
   };
 
   const toggleCategory = (cat: string) => {
@@ -367,31 +546,79 @@ function BooksPageInner() {
     [langCounts]
   );
 
+  // Skeleton loading state
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh', background: 'var(--bg)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <Logo size={64} />
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
+        <Header />
+        <div style={{ height: '64px' }} />
+        <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px 80px' }}>
+          <div style={{ padding: '48px 0 32px', textAlign: 'center' }}>
+            <div style={{
+              width: '280px', height: '40px', borderRadius: '8px',
+              background: 'var(--bg-elevated)', margin: '0 auto 16px',
+              animation: 'shimmer 1.5s ease-in-out infinite',
+            }} />
+            <div style={{
+              width: '400px', height: '20px', borderRadius: '6px',
+              background: 'var(--bg-elevated)', margin: '0 auto 32px',
+              animation: 'shimmer 1.5s ease-in-out infinite',
+              maxWidth: '100%',
+            }} />
+            <div style={{
+              width: '100%', maxWidth: '640px', height: '54px', borderRadius: '14px',
+              background: 'var(--bg-elevated)', margin: '0 auto',
+              animation: 'shimmer 1.5s ease-in-out infinite',
+            }} />
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: 600 }}>
-            Loading 8,197 books...
-          </p>
-        </div>
+          <div
+            className="books-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              gap: '16px',
+              marginLeft: '272px',
+            }}
+          >
+            {Array.from({ length: 12 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </main>
+        <style>{`
+          @keyframes shimmer {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+          }
+          @media (max-width: 900px) {
+            .books-grid { margin-left: 0 !important; }
+          }
+        `}</style>
       </div>
     );
   }
 
   const FilterSidebar = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Reading List */}
+      <button
+        onClick={() => setShowReadingList(!showReadingList)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '10px 12px', borderRadius: '10px', width: '100%',
+          border: showReadingList ? '2px solid #c8531a' : '1px solid var(--border)',
+          background: showReadingList ? 'rgba(200,83,26,0.08)' : 'var(--bg-elevated)',
+          color: showReadingList ? '#c8531a' : 'var(--text)',
+          fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+      >
+        <Bookmark size={15} fill={showReadingList ? '#c8531a' : 'none'} />
+        <span style={{ flex: 1, textAlign: 'left' }}>My Reading List ({readingList.length})</span>
+      </button>
+
       {/* Categories */}
-      <div>
-        <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Categories
-        </h3>
+      <CollapsibleSection title="Categories" defaultOpen={true}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '320px', overflowY: 'auto' }}>
           {sortedCategories.map(([cat, count]) => {
             const config = CATEGORY_CONFIG[cat];
@@ -405,7 +632,7 @@ function BooksPageInner() {
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? `${config.color}08` : 'transparent'; }}
               >
                 <input
                   type="checkbox"
@@ -423,13 +650,10 @@ function BooksPageInner() {
             );
           })}
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Languages */}
-      <div>
-        <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Languages
-        </h3>
+      <CollapsibleSection title="Languages" defaultOpen={true}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '240px', overflowY: 'auto' }}>
           {sortedLanguages.map(([lang, count]) => {
             const isActive = selectedLanguages.has(lang);
@@ -441,7 +665,7 @@ function BooksPageInner() {
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? 'rgba(200,83,26,0.06)' : 'transparent'; }}
               >
                 <input
                   type="checkbox"
@@ -459,14 +683,11 @@ function BooksPageInner() {
             );
           })}
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Format */}
       {Object.keys(formatCounts).length > 1 && (
-        <div>
-          <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Format
-          </h3>
+        <CollapsibleSection title="Format" defaultOpen={false}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {Object.entries(formatCounts).sort((a, b) => b[1] - a[1]).map(([fmt, count]) => {
               const isActive = selectedFormats.has(fmt);
@@ -492,7 +713,7 @@ function BooksPageInner() {
               );
             })}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Clear all */}
@@ -632,14 +853,14 @@ function BooksPageInner() {
             >
               <SlidersHorizontal size={14} />
               Filters
-              {hasActiveFilters && (
+              {activeFilterCount > 0 && (
                 <span style={{
                   width: '18px', height: '18px', borderRadius: '50%',
                   background: 'var(--accent)', color: 'white',
                   fontSize: '10px', fontWeight: 700,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {selectedCategories.size + selectedLanguages.size + selectedFormats.size}
+                  {activeFilterCount}
                 </span>
               )}
             </button>
@@ -748,14 +969,19 @@ function BooksPageInner() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {filtered.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-                <div style={{ fontSize: '64px', marginBottom: '16px' }}>
-                  <Search size={48} style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
+                <div style={{ marginBottom: '16px' }}>
+                  <SearchX size={56} style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
                 </div>
                 <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
                   No books found
                 </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '16px' }}>
-                  Try a different search term or adjust your filters
+                <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '4px' }}>
+                  {debouncedSearch.trim()
+                    ? `No books found for "${debouncedSearch}". Try a different search.`
+                    : 'No books match your current filters.'}
+                </p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
+                  Try adjusting your filters or broadening your search
                 </p>
                 <button
                   onClick={clearAllFilters}
@@ -778,37 +1004,168 @@ function BooksPageInner() {
                 }}
               >
                 {visible.map(book => (
-                  <BookCard key={book.id} book={book} />
+                  <BookCard key={book.id} book={book} isBookmarked={readingList.includes(book.id)} onToggleBookmark={toggleBookmark} />
                 ))}
               </div>
             )}
 
-            {/* Load more */}
+            {/* Infinite scroll sentinel */}
             {visibleCount < filtered.length && (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <button
-                  onClick={() => setVisibleCount(v => v + ITEMS_PER_PAGE)}
-                  style={{
-                    padding: '14px 40px', borderRadius: '12px',
-                    background: 'var(--accent)', color: 'white',
-                    border: 'none', fontSize: '15px', fontWeight: 700,
-                    cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    transition: 'transform 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  <ChevronDown size={18} />
-                  Load more ({Math.min(ITEMS_PER_PAGE, filtered.length - visibleCount).toLocaleString()} more)
-                </button>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  Showing {visibleCount.toLocaleString()} of {filtered.length.toLocaleString()}
+              <div ref={loadMoreRef} style={{ textAlign: 'center', padding: '40px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Showing {Math.min(visibleCount, filtered.length).toLocaleString()} of {filtered.length.toLocaleString()} books
                 </p>
+                <div style={{
+                  width: '32px', height: '32px', margin: '12px auto',
+                  border: '3px solid var(--border)',
+                  borderTopColor: 'var(--accent)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
               </div>
             )}
           </div>
         </div>
       </main>
+
+      {/* Surprise Me FAB */}
+      <button
+        onClick={handleSurpriseMe}
+        className="surprise-fab"
+        style={{
+          position: 'fixed', bottom: '32px', right: '32px', zIndex: 100,
+          width: '56px', height: '56px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #c8531a, #e8763f)',
+          border: 'none', cursor: 'pointer', color: 'white',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 20px rgba(200,83,26,0.4)',
+          transition: 'transform 0.3s, box-shadow 0.3s',
+          animation: surpriseAnim ? 'surpriseBounce 0.6s ease' : 'none',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.boxShadow = '0 6px 28px rgba(200,83,26,0.5)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 4px 20px rgba(200,83,26,0.4)';
+        }}
+        title="Surprise Me — Random Book"
+      >
+        <Shuffle size={24} />
+      </button>
+
+      {/* Surprise Me Modal */}
+      {surpriseBook && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={() => setSurpriseBook(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-card)', borderRadius: '20px',
+              border: '1px solid var(--border)', maxWidth: '480px', width: '100%',
+              overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+              animation: 'surpriseModalIn 0.3s ease',
+            }}
+          >
+            {(() => {
+              const sConfig = CATEGORY_CONFIG[surpriseBook.category] || { emoji: '\uD83D\uDCDA', color: '#64748b', label: surpriseBook.category };
+              const sThumb = surpriseBook.thumbnailUrl || (surpriseBook.archiveId ? `https://archive.org/services/img/${surpriseBook.archiveId}` : '');
+              return (
+                <>
+                  <div style={{
+                    height: '220px', position: 'relative', overflow: 'hidden',
+                    background: `linear-gradient(135deg, ${sConfig.color}20, ${sConfig.color}08)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {sThumb ? (
+                      <img src={sThumb} alt={surpriseBook.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ fontSize: '64px' }}>{sConfig.emoji}</div>
+                    )}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)',
+                    }} />
+                    <button
+                      onClick={() => setSurpriseBook(null)}
+                      style={{
+                        position: 'absolute', top: '12px', right: '12px',
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.5)', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div style={{ padding: '24px' }}>
+                    <span style={{
+                      padding: '4px 12px', borderRadius: '100px',
+                      fontSize: '12px', fontWeight: 600,
+                      background: `${sConfig.color}12`, color: sConfig.color,
+                    }}>
+                      {sConfig.emoji} {sConfig.label}
+                    </span>
+                    <h3 style={{
+                      fontSize: '20px', fontWeight: 800, color: 'var(--text)',
+                      marginTop: '12px', marginBottom: '6px', lineHeight: 1.3,
+                    }}>
+                      {surpriseBook.title}
+                    </h3>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      by {surpriseBook.author}
+                    </p>
+                    {surpriseBook.description && (
+                      <p style={{
+                        fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5,
+                        marginBottom: '16px',
+                        display: '-webkit-box', WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
+                      }}>
+                        {surpriseBook.description}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <a
+                        href={surpriseBook.archiveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          flex: 1, padding: '12px 20px', borderRadius: '12px',
+                          background: '#c8531a', color: 'white', textDecoration: 'none',
+                          fontSize: '14px', fontWeight: 700, textAlign: 'center',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        }}
+                      >
+                        Read on Archive.org <ExternalLink size={14} />
+                      </a>
+                      <button
+                        onClick={handleSurpriseMe}
+                        style={{
+                          padding: '12px 20px', borderRadius: '12px',
+                          border: '1px solid var(--border)', background: 'var(--bg-elevated)',
+                          color: 'var(--text)', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                        }}
+                      >
+                        <Shuffle size={14} /> Another
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer style={{
@@ -834,6 +1191,13 @@ function BooksPageInner() {
       </footer>
 
       <style>{`
+        @keyframes shimmer {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
         .filter-sidebar {
           display: block;
         }
@@ -852,6 +1216,23 @@ function BooksPageInner() {
           .books-grid {
             grid-template-columns: 1fr !important;
           }
+          .surprise-fab {
+            bottom: 20px !important;
+            right: 20px !important;
+            width: 48px !important;
+            height: 48px !important;
+          }
+        }
+        @keyframes surpriseBounce {
+          0% { transform: scale(1) rotate(0deg); }
+          25% { transform: scale(1.2) rotate(15deg); }
+          50% { transform: scale(0.9) rotate(-10deg); }
+          75% { transform: scale(1.1) rotate(5deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes surpriseModalIn {
+          0% { transform: scale(0.9); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
     </div>
