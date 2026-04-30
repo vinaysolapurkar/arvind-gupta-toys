@@ -3,9 +3,17 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, BookOpen, Film, Wrench, ArrowRight, ExternalLink, Globe, Heart, Library, Clapperboard, Lightbulb, Shuffle, Sparkles, X, Clock, Trash2 } from 'lucide-react';
-import { toys, films } from '@/lib/data';
+import { toys } from '@/lib/data';
 import Header from '@/components/Header';
 import Logo from '@/components/Logo';
+
+interface FilmJSON {
+  youtubeId: string;
+  title: string;
+  duration: string;
+  language: string;
+  category: string;
+}
 
 interface Book {
   id: string;
@@ -138,7 +146,8 @@ export default function HomePage() {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [dailyBook, setDailyBook] = useState<Book | null>(null);
   const [dailyToy, setDailyToy] = useState<typeof toys[0] | null>(null);
-  const [dailyFilm, setDailyFilm] = useState<typeof films[0] | null>(null);
+  const [dailyFilm, setDailyFilm] = useState<FilmJSON | null>(null);
+  const [totalFilms, setTotalFilms] = useState(0);
   const [recentlyViewed, setRecentlyViewed] = useState<Book[]>([]);
   const [surpriseBook, setSurpriseBook] = useState<Book | null>(null);
   const [surpriseAnim, setSurpriseAnim] = useState(false);
@@ -181,7 +190,6 @@ export default function HomePage() {
         const dayIndex = Math.floor(Date.now() / 86400000);
         if (data.length > 0) setDailyBook(data[dayIndex % data.length]);
         if (toys.length > 0) setDailyToy(toys[dayIndex % toys.length]);
-        if (films.length > 0) setDailyFilm(films[dayIndex % films.length]);
 
         // Recently Viewed
         try {
@@ -196,6 +204,18 @@ export default function HomePage() {
         setDataLoaded(true);
       })
       .catch(() => { setDataLoaded(true); });
+  }, []);
+
+  // Load films data for count and daily pick
+  useEffect(() => {
+    fetch('/films.json')
+      .then(r => r.json())
+      .then((data: FilmJSON[]) => {
+        setTotalFilms(data.length);
+        const dayIndex = Math.floor(Date.now() / 86400000);
+        if (data.length > 0) setDailyFilm(data[dayIndex % data.length]);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSearch = () => {
@@ -333,7 +353,7 @@ export default function HomePage() {
                 {[
                   { label: 'Books', count: totalBooks || 8197, href: '/books', icon: BookOpen },
                   { label: 'Toys', count: toys.length, href: '/toys', icon: Wrench },
-                  { label: 'Films', count: films.length, href: '/films', icon: Film },
+                  { label: 'Films', count: totalFilms || 8544, href: '/films', icon: Film },
                 ].map(stat => (
                   <Link key={stat.label} href={stat.href} style={{
                     textDecoration: 'none',
@@ -560,8 +580,8 @@ export default function HomePage() {
                       <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginTop: '10px', marginBottom: '4px', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
                         {dailyFilm.title}
                       </h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', marginBottom: '10px' }}>
-                        {dailyFilm.description}
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: '10px' }}>
+                        {dailyFilm.language} -- {dailyFilm.duration}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#8b5cf6', fontSize: '13px', fontWeight: 700 }}>
@@ -696,7 +716,7 @@ export default function HomePage() {
               },
               {
                 title: 'Films',
-                desc: `${films.length.toLocaleString()} educational films on YouTube`,
+                desc: `${(totalFilms || 8544).toLocaleString()} educational films on YouTube`,
                 img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800',
                 href: '/films',
                 color: '#8b5cf6',
